@@ -1,0 +1,291 @@
+                                     MLP (multilayer perceptron models Using Python -TF & Keras)-UCI IRIS & Wine Data
+#Imprort Required Libraires
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+# Make NumPy printouts easier to read.
+np.set_printoptions(precision=3, suppress=True)
+
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from sklearn import preprocessing
+from tensorflow.keras.layers import Dense
+from keras.optimizers import SGD
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import StandardScaler
+from sklearn import preprocessing
+print(tf.__version__)
+1st Data Set
+Fetch the data from UCI machine learning repositarory
+url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data'
+column_names = ['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm', 'Species']
+
+df = pd.read_csv(url, names=column_names,
+                          na_values='?', comment='\t',
+                          sep=',', skipinitialspace=True)
+
+#Attribute Information:
+
+Input Variables
+
+1. sepal length in cm
+2. sepal width in cm
+3. petal length in cm
+4. petal width in cm
+
+Dependent Variable\
+class:\
+-- Iris Setosa\
+-- Iris Versicolour\
+-- Iris Virginica
+
+Iris Data set contains above five attriubtes of iris flower.
+
+All Input variables are numerical variable and output variable is Dependent variable
+
+Task :predict the correct iris flower species based on thier attributes (sepal length,sepal width,petal length,petal width)
+
+df = df.copy()
+df.head()
+Data Prepocessing
+df.info()
+This data set doesn't contian any null values and 150 observation details of iris flower
+print(df.isna().sum())
+df.describe()
+df['Species'].value_counts()
+Data Visualisation
+sns.pairplot(data=df, hue='Species', height=3, diag_kind='kde')
+Next we scale the data so it become easy for a model to learn and understand the problem.\
+Calculate μ & σ(fit) and apply the transformation\
+Center test data with the μ & σ computed (fitted) on training data
+data_x = df[['SepalLengthCm', 'SepalWidthCm', 'PetalLengthCm', 'PetalWidthCm']]
+data_y = df['Species']
+df_sin_escale = data_x
+scaler = StandardScaler()
+data_x_escale = scaler.fit_transform(data_x.values)
+df_escale = pd.DataFrame(data_x_escale, index = data_x.index, columns = data_x.columns)
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(6, 5))
+
+ax1.set_title('Before Scaling')
+sns.kdeplot(df_sin_escale['SepalLengthCm'], ax=ax1)
+sns.kdeplot(df_sin_escale['SepalWidthCm'], ax=ax1)
+sns.kdeplot(df_sin_escale['PetalLengthCm'], ax=ax1)
+sns.kdeplot(df_sin_escale['PetalWidthCm'], ax=ax1)
+
+ax2.set_title('After Scaling')
+sns.kdeplot(df_escale['SepalLengthCm'], ax=ax2)
+sns.kdeplot(df_escale['SepalWidthCm'], ax=ax2)
+sns.kdeplot(df_escale['PetalLengthCm'], ax=ax2)
+sns.kdeplot(df_escale['PetalWidthCm'], ax=ax2)
+
+plt.show()
+
+Next we split the data set into train and test set (80% of  dataset into  training set and  other 20% into test data)
+X1_train, X1_test, y1_train, y1_test = train_test_split(df_escale.values, data_y, test_size = 0.2, random_state=42)
+Transforming categorial data into numerical values
+le = preprocessing.LabelEncoder()
+y1_train = le.fit_transform(y1_train)
+y1_test = le.fit_transform(y1_test)
+y1_train = keras.utils.to_categorical(y1_train, num_classes = 3)
+y1_test = keras.utils.to_categorical(y1_test, num_classes = 3)
+print(X1_train.shape)
+print(X1_test.shape)
+print(y1_train.shape)
+print(y1_test.shape)
+Build Multilayer Perceptron Model
+We will be now implementing a Multi-Layer Perceptron that contains 3 layers.
+Keras provides easy to use functionality to achieve this using its Sequential mode and include linear stack of layers. Keras provides different types of layers. 
+We will be using the Dense layer type which is a fully connected layer that implements the operation
+To train our network we will be using the Stochastic Gradient Descent optimizer.
+We will now create our network architecture. It will contain 3 layers. 
+Our first layer will have 4 inputs corresponding to the 4 features we will be utilizing from the iris dataset.
+For our second layer (hidden layer) we will be using 5 neurons.
+Our third layer, will provide our classifications. This layer contains 3 neurons, corresponding to the 3 classes that we are aiming to predict.
+
+model = Sequential()
+model.add(Dense(100, activation='relu', input_dim=4)) #input layer
+model.add(Dense(5))#hidden layer
+model.add(Dense(3, activation='softmax'))#output layer
+sgd = SGD(learning_rate = 0.01, decay = 1e-6, momentum = 0.9, nesterov=True)
+model.compile(optimizer=sgd,
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+Once we have our model built, we compiled our model.
+To compile our model we need to provide a loss function and an optimizer.
+The optimizer we defined to be the Stochastic Gradient Descent with a learning rate of 0.01, decay of 0.000001 and momentum of 0.9. 
+history = model.fit(X1_train, y1_train, epochs = 100, batch_size = 32)
+# evaluate the model
+test_loss1, test_accuracy1 = model.evaluate(X1_test, y1_test, verbose=0)
+
+print(f'\n Accuracy on test set is {test_accuracy1 * 100:.2f}%')
+print(f'\n Loss on test set is {test_loss1:.2f}%')
+y1_pred = model.predict(X1_test)
+y_test_class1 = np.argmax(y1_test, axis=1)
+y_pred_class1 = np.argmax(y1_pred, axis=1)
+
+print(classification_report(y_test_class1, y_pred_class1))
+print(confusion_matrix(y_test_class1, y_pred_class1))
+# evaluate the model train
+train_loss1, train_accuracy1 = model.evaluate(X1_train, y1_train, verbose=0)
+
+print(f'\n Accuracy on train set is {train_accuracy1 * 100:.2f}%')
+print(f'\n Loss on train set is {train_loss1:.2f}%')
+df_results = pd.DataFrame.from_dict(history.history)
+Graph accuracy plot
+plt.plot(df_results['accuracy'])
+plt.xlabel('# epochs')
+plt.ylabel('accuracy')
+plt.show()
+Graph 'loss' plot
+plt.plot(df_results['loss'])
+plt.xlabel('# epochs')
+plt.ylabel('loss')
+plt.show()
+Conclusion: MLP model 100% accurately predict the Iris Flower Type
+2nd Data Set
+
+The datasets are related to red variants of the Portuguese "Vinho Verde" wine.\
+
+Attribute Information:
+
+Input variables (based on physicochemical tests):\
+1 - fixed acidity\
+2 - volatile acidity\
+3 - citric acid\
+4 - residual sugar\
+5 - chlorides\
+6 - free sulfur dioxide\
+7 - total sulfur dioxide\
+8 - density\
+9 - pH\
+10 - sulphates\
+11 - alcohol
+
+Output variable (based on sensory data):\
+12 - quality (score between 0 and 10)
+
+All Input variables are numerical variable and output variable is Dependent variable
+
+Task :predict the wine quality based on thier attributes (Input Variables)
+Fetch the data from UCI Machine learning repository
+df2 = pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv',sep=';')
+df2.head()
+Checking the missing values
+print(df2.isna().sum())
+According to output no missing values in the data set
+df2.info()
+df2.describe()
+df2['quality'].value_counts()
+According to dataset wine quality range betwee 3-10
+sample_count = df2['quality'].value_counts()
+sample_count.plot(kind='bar', title='count')
+plt.xlabel('quallity value')
+plt.ylabel('no of observations')
+Data Preprocessing
+
+Convert quality variable into cateogrical variable ( values as 0,1,2,3,4,5,6)
+df3 = df2.copy()
+df3['quality'].replace({3:0, 4:1, 5:2, 6:3, 7:4, 8:5}, inplace=True)
+df3.head(10)
+y = df3['quality']
+X = df3.drop('quality', axis=1)
+df_sin_escale1 = X
+Next we scale the data so it become easy for a model to learn and understand the problem.
+Calculate μ & σ(fit) and apply the transformation
+Center test data with the μ & σ computed (fitted) on training data
+scaler = StandardScaler()
+
+data_x_escale1 = scaler.fit_transform(X.values)
+df_escale1 = pd.DataFrame(data_x_escale1, index = X.index, columns = X.columns)
+
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(6, 5))
+
+ax1.set_title('Before Scaling')
+sns.kdeplot(df_sin_escale1['fixed acidity'], ax=ax1)
+sns.kdeplot(df_sin_escale1['volatile acidity'], ax=ax1)
+sns.kdeplot(df_sin_escale1['citric acid'], ax=ax1)
+sns.kdeplot(df_sin_escale1['residual sugar'], ax=ax1)
+sns.kdeplot(df_sin_escale1['chlorides'], ax=ax1)
+sns.kdeplot(df_sin_escale1['free sulfur dioxide'], ax=ax1)
+sns.kdeplot(df_sin_escale1['total sulfur dioxide'], ax=ax1)
+sns.kdeplot(df_sin_escale1['density'], ax=ax1)
+sns.kdeplot(df_sin_escale1['pH'], ax=ax1)
+sns.kdeplot(df_sin_escale1['sulphates'], ax=ax1)
+sns.kdeplot(df_sin_escale1['alcohol'], ax=ax1)
+
+
+ax2.set_title('After Scaling')
+sns.kdeplot(df_escale1['fixed acidity'], ax=ax2)
+sns.kdeplot(df_escale1['volatile acidity'], ax=ax2)
+sns.kdeplot(df_escale1['citric acid'], ax=ax2)
+sns.kdeplot(df_escale1['residual sugar'], ax=ax2)
+sns.kdeplot(df_escale1['chlorides'], ax=ax2)
+sns.kdeplot(df_escale1['free sulfur dioxide'], ax=ax2)
+sns.kdeplot(df_escale1['total sulfur dioxide'], ax=ax2)
+sns.kdeplot(df_escale1['density'], ax=ax2)
+sns.kdeplot(df_escale1['pH'], ax=ax2)
+sns.kdeplot(df_escale1['sulphates'], ax=ax2)
+sns.kdeplot(df_escale1['alcohol'], ax=ax2)
+
+plt.show()
+
+Next we split the data set into train and test set (80% of dataset into training set and other 20% into test data)
+X_train, X_test, y_train, y_test = train_test_split(df_escale1.values, y, test_size = 0.2, random_state=50)
+
+le1 = preprocessing.LabelEncoder()
+y_train = le1.fit_transform(y_train)
+y_test = le1.fit_transform(y_test)
+
+y_train = keras.utils.to_categorical(y_train, num_classes = 6)
+y_test = keras.utils.to_categorical(y_test, num_classes = 6)
+print(X_train.shape)
+print(X_test.shape)
+print(y_train.shape)
+print(y_test.shape)
+We will be now implementing a Multi-Layer Perceptron that contains 3 layers. Keras provides easy to use functionality to achieve this using its Sequential mode and include linear stack of layers.We will be using the Dense layer type which is a fully connected layer that implements the operation To train our network we will be using the Stochastic Gradient Descent optimizer. We will now create our network architecture. It will contain 3 layers. Our first layer will have 11 inputs corresponding to the 11 features we will be utilizing from the wine dataset. For our second layer (hidden layer) we will be using 20 neurons. Our third layer, will provide our classifications. This layer contains 6 neurons, corresponding to the 6 classes that we are aiming to predict.
+
+model = Sequential()
+model.add(Dense(512, activation='relu', input_dim=11)) #input layer
+model.add(Dense(20))#hidden layer
+model.add(Dense(6, activation='softmax'))#output layer
+sgd = SGD(learning_rate = 0.01, decay = 1e-6, momentum = 0.9, nesterov=True)
+model.compile(optimizer=sgd,
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+history = model.fit(X_train, y_train, epochs = 100, batch_size = 32)
+# evaluate the model (test)
+test_loss2, test_accuracy2 = model.evaluate(X_test, y_test, verbose=0)
+
+print(f'\n Accuracy on test set is {test_accuracy2 * 100:.2f}%')
+print(f'\n Loss on test set is {test_loss2:.2f}%')
+# evaluate the model train
+train_loss2, train_accuracy2 = model.evaluate(X_train, y_train, verbose=0)
+
+print(f'\n Accuracy on train set is {train_accuracy2 * 100:.2f}%')
+print(f'\n Loss on train set is {train_loss2:.2f}%')
+y_pred = model.predict(X_test)
+y_test_class= np.argmax(y_test, axis=1)
+y_pred_class = np.argmax(y_pred, axis=1)
+
+print(classification_report(y_test_class, y_pred_class))
+print(confusion_matrix(y_test_class, y_pred_class))
+df_results1 = pd.DataFrame.from_dict(history.history)
+Graph accuracy plot
+plt.plot(df_results1['accuracy'])
+plt.xlabel('# epochs')
+plt.ylabel('accuracy')
+plt.show()
+Graph 'loss' plot
+plt.plot(df_results1['loss'])
+plt.xlabel('# epochs')
+plt.ylabel('loss')
+plt.show()
+Conclusion :In wine data, for training set accurately predict the wine quality for 86% but for test set wine quality prediction accuracy is 65%.
+
+Comparing two data set Iris data set using MLP model can get higher accuracy & lower accuracy prediction for wine data set.
