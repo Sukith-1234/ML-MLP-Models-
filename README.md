@@ -1,5 +1,5 @@
 # Machine-Learning
-Creating classifciation modles using Tenserflow & Keras
+Creating classifciation models using Tenserflow & Keras
 
 Dat set
  1) UCI -IRIS Data set
